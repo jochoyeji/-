@@ -10,7 +10,202 @@
     <title>성취도 기반 자기주도학습 플래너</title>
     
     <style>
-        /* 여기에 css/style.css 파일의 모든 내용을 복사-붙여넣기 하세요 */
+        /**
+ * css/style.css
+ * 1~3단계 통합 스타일시트
+ * 깔끔하고 한눈에 보기 좋은 흰색 배경, 검정 텍스트/테두리 기반 디자인
+ */
+
+/* --- [1단계] 기본 초기화 및 모바일 레이아웃 --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: #000;
+}
+
+body {
+    background-color: #e0e0e0; /* PC/태블릿 여백 배경색 */
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* 앱 전체 컨테이너 (모바일 비율 유지) */
+#app {
+    width: 100%;
+    max-width: 480px;
+    background-color: #ffffff;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+
+/* SPA 화면 전환 클래스 */
+.screen {
+    display: none;
+    width: 100%;
+    min-height: 100vh;
+    flex-direction: column;
+}
+.screen.active {
+    display: flex;
+}
+
+/* 공통 헤더 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 2px solid #000;
+}
+.header h1, .header h2 {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+.header-placeholder {
+    width: 24px;
+}
+
+/* 버튼 스타일 정의 */
+button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.icon-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+.btn-back {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+.btn-text {
+    font-weight: bold;
+    padding: 5px 10px;
+    border: 1px solid #000;
+}
+.hidden {
+    display: none !important;
+}
+
+/* 햄버거 메뉴 아이콘 선 */
+.hamburger-line {
+    width: 24px;
+    height: 3px;
+    background-color: #000;
+}
+
+/* 상단 통계 박스 스타일 */
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 20px;
+    gap: 10px;
+}
+.stat-box {
+    flex: 1;
+    border: 1px solid #000;
+    padding: 10px 5px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+}
+.stat-label {
+    font-size: 0.8rem;
+    word-break: keep-all;
+}
+.stat-value {
+    font-weight: bold;
+    font-size: 1rem;
+}
+.content-padding {
+    padding: 20px;
+}
+
+/* --- [1단계] 모달 기본 및 햄버거 메뉴 모달 --- */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* 배경 어둡게 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+.square-modal {
+    width: 75%;
+    aspect-ratio: 1 / 1;
+    background-color: #fff;
+    border: 2px solid #000;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+.btn-close-box {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border: 2px solid #000;
+    background-color: #fff;
+    font-weight: bold;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.menu-button-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* --- [3단계 수정] 메뉴 버튼 네모 박스 스타일 --- */
+.menu-button-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* 세 가지 버튼을 확실한 네모 박스 스타일로 구현 */
+.menu-btn.box-button {
+    border: 2px solid #000; /* 검정 테두리 */
+    padding: 15px 10px;
+    font-weight: bold;
+    text-align: center;
+    background-color: #fff; /* 흰색 배경 */
+    display: block;
+    width: 100%;
+    border-radius: 0; /* 라운드 없이 완벽한 네모 박스 */
+}
+
+.menu-btn.box-button:active {
+    background-color: #f0f0f0; /* 클릭 시 피드백 */
+}
     </style>
 </head>
 </head>
