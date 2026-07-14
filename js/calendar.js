@@ -1,8 +1,6 @@
 /**
- * calendar.js
- * 캘린더 렌더링, 날짜 선택 및 순공 시간 입력 모달 제어를 담당합니다.
+ * calendar.js (3단계 수정 반영)
  */
-
 (function() {
     const calendarContainer = document.getElementById('calendar-container');
     const monthYearDisplay = document.getElementById('current-month-year');
@@ -15,20 +13,16 @@
 
     let selectedDateStr = null;
 
-    // 1. 캘린더 렌더링 함수
+    // 1. 캘린더 렌더링 및 성취도 등급 표시
     function renderCalendar() {
         const now = new Date();
         const year = now.getFullYear();
-        const month = now.getMonth(); // 0 ~ 11
+        const month = now.getMonth();
         const todayDate = now.getDate();
         
-        // 헤더 텍스트 갱신 (--년 -월)
         monthYearDisplay.textContent = `${year}년 ${month + 1}월`;
-        
-        // 컨테이너 초기화
         calendarContainer.innerHTML = '';
 
-        // 요일 헤더 생성
         const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
         daysOfWeek.forEach(day => {
             const dayDiv = document.createElement('div');
@@ -37,51 +31,108 @@
             calendarContainer.appendChild(dayDiv);
         });
 
-        // 이번 달의 시작 요일 및 총 일수 계산
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // 1일 이전의 빈 칸 생성
         for (let i = 0; i < firstDay; i++) {
             const emptyDiv = document.createElement('div');
             calendarContainer.appendChild(emptyDiv);
         }
 
-        // 날짜 칸 생성
+        // 저장된 기록 가져오기
+        const records = window.StudyRecords ? window.StudyRecords.getAllRecords() : {};
+
         for (let i = 1; i <= daysInMonth; i++) {
             const dateDiv = document.createElement('div');
             dateDiv.className = 'cal-day';
             
-            // 오늘 날짜 처리
             if (i === todayDate) {
                 dateDiv.classList.add('today');
             }
 
-            // 날짜 텍스트
             const dateSpan = document.createElement('span');
             dateSpan.textContent = i;
             
-            // 성취도 등급 표시 영역 (3, 4단계에서 데이터 연동 예정)
             const gradeSpan = document.createElement('span');
             gradeSpan.className = 'grade-display';
-            gradeSpan.textContent = ''; // 예: 'S', 'A' 등
+            
+            // 날짜 문자열 키 생성 (YYYY-MM-DD)
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            
+            // 기록이 있다면 알파벳 등급만 표시
+            if (records[dateStr] && records[dateStr].grade) {
+                gradeSpan.textContent = records[dateStr].grade;
+            }
 
             dateDiv.appendChild(dateSpan);
             dateDiv.appendChild(gradeSpan);
 
-            // 날짜 클릭 이벤트 -> 모달 오픈
             dateDiv.addEventListener('click', () => {
-                selectedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                selectedDateStr = dateStr;
                 openStudyModal();
             });
 
             calendarContainer.appendChild(dateDiv);
         }
+
+        // 상단 통계 정보 업데이트
+        updateTopStats(year, month);
     }
 
-    // 2. 모달 제어 함수
+    // 2. 상단 통계 박스 업데이트 (평균 달성률, 어제 달성률, 연속 성취도)
+    function updateTopStats(year, month) {
+        if (!window.StudyRecords) return;
+        const records = window.StudyRecords.getAllRecords();
+        
+        // --- [1] 평균 달성률 계산 (해당 월 기준) ---
+        let totalPercent = 0;
+        let count = 0;
+        
+        Object.keys(records).forEach(dateKey => {
+            if (dateKey.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)) {
+                totalPercent += records[dateKey].percent;
+                count++;
+            }
+        });
+        const avgPercent = count > 0 ? Math.round(totalPercent / count) : 0;
+        document.getElementById('stat-avg').textContent = count > 0 ? `${avgPercent}%` : '-';
+
+        // --- [2] 어제 달성률 계산 ---
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+        
+        if (records[yKey]) {
+            document.getElementById('stat-yesterday').textContent = `${records[yKey].grade}(${records[yKey].percent}%)`;
+        } else {
+            document.getElementById('stat-yesterday').textContent = '-';
+        }
+
+        // --- [3] 연속 성취도 일수 계산 (A이상: SS, S, A 기준) ---
+        let streak = 0;
+        let checkDate = new Date(); // 오늘부터 역산 시작
+        
+        while (true) {
+            const cKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            const record = records[cKey];
+            
+            if (record && ['SS', 'S', 'A'].includes(record.grade)) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                // 오늘 기록이 없으면 어제부터 다시 연속성을 검사하기 위해 하루 전을 한 번 더 확인함
+                if (streak === 0 && cKey === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`) {
+                    checkDate.setDate(checkDate.getDate() - 1);
+                    continue;
+                }
+                break;
+            }
+        }
+        // 연속 성취도는 이틀(2일) 이상 달성했을 때만 표시하고 아니면 -일 처리
+        document.getElementById('stat-streak').textContent = streak >= 2 ? `${streak}일` : '-일';
+    }
+
     function openStudyModal() {
-        // 입력 필드 및 에러 메시지 초기화
         inputHours.value = '';
         inputMinutes.value = '';
         errorText.classList.add('hidden');
@@ -92,48 +143,50 @@
         studyModal.classList.add('hidden');
     }
 
-    // 모달 배경 클릭 시 닫기
     studyModal.addEventListener('click', (e) => {
-        if (e.target === studyModal) {
-            closeStudyModal();
-        }
+        if (e.target === studyModal) closeStudyModal();
     });
 
-    // 3. 완료 버튼 클릭 이벤트 (입력값 검증)
+    // 3. 저장 및 예외 메시지 연동
     btnSaveTime.addEventListener('click', () => {
         const hStr = inputHours.value.trim();
         const mStr = inputMinutes.value.trim();
 
-        // 숫자를 입력하지 않은 상태 체크
         if (hStr === '' && mStr === '') {
             errorText.classList.remove('hidden');
             return;
         }
 
-        // 입력값이 비어있으면 0으로 처리, 값이 있으면 숫자로 변환
         const hours = hStr === '' ? 0 : Number(hStr);
         const minutes = mStr === '' ? 0 : Number(mStr);
 
-        // 숫자 외의 다른 문자가 입력되었거나(NaN), 음수인 경우 에러 처리
         if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0) {
             errorText.classList.remove('hidden');
             return;
         }
 
-        // 에러 숨김
         errorText.classList.add('hidden');
 
-        // TODO: 3단계에서 LocalStorage와 records.js를 통해 실제 저장 로직 및 성취도 계산 연동
-        // 임시로 모달을 닫고 성공 메시지 출력
-        closeStudyModal();
-        if (window.showToast) {
-            window.showToast('저장되었습니다'); // 3단계에서 로직 구체화
+        // 실제 records.js를 통한 계산 및 저장 진행
+        const result = window.StudyRecords.saveRecord(selectedDateStr, hours, minutes);
+        
+        if (result.success) {
+            closeStudyModal();
+            renderCalendar(); // 등급 및 상단 통계 즉시 갱신
+            
+            // 실제 공부 시간이 목표 시간을 크게 초과했을 때의 커스텀 알림 처리 (기본 alert 대신 toast 활용 확대)
+            if (result.isOver) {
+                window.showToast('목표 시간을 초과하여 100%로 기록되었습니다!');
+            } else {
+                window.showToast(result.message); // "저장되었습니다" 3초간 노출
+            }
+        } else {
+            // 저장 실패 혹은 공부가능시간 0분 요류 메시지 토스트 처리
+            window.showToast(result.message, true);
         }
     });
 
-    // 초기화 실행
     document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     });
-
 })();
